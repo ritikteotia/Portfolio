@@ -1,0 +1,190 @@
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #070606;
+  color: #333;
+  line-height: 1.6;
+  padding: 1rem 1rem;
+}
+
+/* Header */
+header {
+  box-shadow: 0 2px 10px rgba(217, 4, 4, 0.54);
+  padding: 1rem 1rem;
+  border-radius: 12px;
+  position:relative;
+  top: 0;
+  z-index: 10;
+  display: flex;              /* Add this */
+  align-items: center;        /* Vertically center items */
+  justify-content: space-between; /* Space between h1 and nav */
+}
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #e82222;
+}
+
+nav a {
+  margin: 0 0.8rem;
+  color: #e4dada;
+  text-decoration: none;
+  font-weight: 500;
+  text-align: right;
+}
+
+nav a:hover {
+  color: #e41e04;
+}
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 0.5rem 0.5rem;
+  color: #fff;
+  border-radius: 12px;
+  margin: 1.5rem 0 3rem 0; /* Increased bottom margin for more space */
+}
+
+.hero h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+
+/* Posts */
+.posts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 3rem;
+}
+.posts h1 {
+  grid-column: 1 / -1;
+  text-align: left;
+  margin-bottom: 1.5rem;
+  color: #e82222;
+}
+.post {
+  background: #646262; ;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
+}
+
+.post:hover {
+  transform: translateY(-4px);
+}
+
+.post p {
+  margin-bottom: 1rem;
+  color: #0b0303;
+}
+
+.post a {
+  text-decoration: none;
+  color: #f7f1f0;
+  font-weight: bold;
+}
+.post a{
+    cursor: pointer;
+}
+.post a:hover {
+  color: #a22211;
+}
+
+/* Skills Section */
+.skills {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 3rem auto 0 auto;
+  padding-bottom: 3rem;
+}
+.skills h1 {
+  grid-column: 1 / -1;
+  text-align: left;
+  margin-bottom: 1.5rem;
+  color: #e82222;
+}
+.skill {
+  background: #646262;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.skill h2 {
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+.skill p {
+  color: #0b0303;
+}
+@media (min-width: 768px) {
+  .skills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Connect Section */
+.social {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 3rem auto 0 auto;
+  padding-bottom: 3rem;
+}
+.social h1 {
+  grid-column: 1 / -1;
+  text-align: left;
+  margin-bottom: 1.5rem;
+  color: #e82222;
+}
+.social img {
+  width: 20px;
+  height: 20px;
+  margin-right: 1rem;
+  color: #e82222;
+}
+.social p {
+  margin-bottom: 0.5rem;
+  color: #bcaeae;
+}
+.social-icons a {
+  text-decoration: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.social-icons a:visited,
+.social-icons a:focus,
+.social-icons a:hover,
+.social-icons a:active {
+  text-decoration: none;
+  outline: none;
+  box-shadow: none;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .posts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
