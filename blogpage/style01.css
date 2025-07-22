@@ -1,0 +1,92 @@
+/* Reset & Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #161414;
+  color: #100e0e;
+  line-height: 1.6;
+  padding: 1rem 1rem;
+}
+
+/* Header */
+header {
+  box-shadow: 0 2px 10px rgba(217, 4, 4, 0.54);
+  padding: 1rem 1rem;
+  border-radius: 12px;
+  position:relative;
+  top: 0;
+  z-index: 10;
+  display: flex;              /* Add this */
+  align-items: center;        /* Vertically center items */
+  justify-content: space-between; /* Space between h1 and nav */
+}
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #e82222;
+}
+
+nav a {
+  margin: 0 0.8rem;
+  color: #e4dada;
+  text-decoration: none;
+  font-weight: 500;
+  text-align: right;
+}
+
+nav a:hover {
+  color: #e41e04;
+}
+
+
+
+/* Blog post styles */
+main {
+  max-width: 700px;
+  margin: 40px auto 40px auto;
+  padding: 24px;
+  background: #313030;
+  border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+
+.blog-post h2 {
+  margin-top: 0;
+  color: #bd2004;
+  font-size: 2rem;
+}
+
+.blog-post em {
+  color: #e0d7d7;
+  font-size: 0.98rem;
+}
+
+.blog-post ul {
+  margin: 18px 0;
+  padding-left: 22px;
+}
+
+.blog-post li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+
+footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .posts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
