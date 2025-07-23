@@ -129,7 +129,11 @@ main {
   font-size: 0.4rem; /* Reduced quote text size */
   line-height: 0.7; /* Reduced line spacing */
 }
-
+@media (max-width: 600px) {
+  .quote {
+    font-size: 0.4rem; /* Smaller size for mobile */
+  }
+}
 footer {
   text-align: center;
   padding: 2rem 1rem;
