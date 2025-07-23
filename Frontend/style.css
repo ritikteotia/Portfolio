@@ -181,6 +181,13 @@ footer {
   color: #777;
   font-size: 0.9rem;
 }
+footer a {
+  color: inherit;        /* Use the footer's text color */
+  text-decoration: none; /* Remove underline */
+}
+footer a:visited {
+  color: inherit;        /* Prevent purple color for visited links */
+}
 
 /* Responsive */
 @media (min-width: 768px) {
