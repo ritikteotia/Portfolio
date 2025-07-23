@@ -72,6 +72,19 @@ nav a:hover {
   margin-bottom: 1.5rem;
   color: #e82222;
 }
+.posts h3 {
+  margin-bottom: 0.5rem;
+  color: #dcd5d2;
+}
+.posts em {
+  color: #c8b3b3
+}
+.posts p4 {
+  margin-bottom: 1.2rem;
+  color: #d6c8c8;
+  font-size: 0.8rem;
+  
+}
 .post {
   background: #0c0b0b; ;
   padding: 1.5rem;
@@ -91,7 +104,7 @@ nav a:hover {
 
 .post a {
   text-decoration: none;
-  color: #f7f1f0;
+  color: #da624d;
   font-weight: bold;
 }
 .post a{
