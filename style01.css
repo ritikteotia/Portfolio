@@ -127,7 +127,7 @@ main {
   text-align: center;
   font-style: italic;
   font-size: 0.4rem; /* Reduced quote text size */
-  line-height: 1; /* Reduced line spacing */
+  line-height: 0.7; /* Reduced line spacing */
 }
 
 footer {
