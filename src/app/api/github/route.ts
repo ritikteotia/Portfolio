@@ -51,6 +51,9 @@ export async function GET() {
           parsedDays.push({ date, count, level });
         }
 
+        // Sort chronologically to align with column-flow grids
+        parsedDays.sort((a, b) => a.date.localeCompare(b.date));
+
         const currentYear = new Date().getFullYear().toString();
         contributions = {
           total: { [currentYear]: totalCount },
