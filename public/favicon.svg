@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <rect width="100" height="100" rx="20" fill="#FFF7EE" />
-  <rect width="90" height="90" x="5" y="5" rx="15" fill="none" stroke="#E8531A" stroke-width="2" />
-  <text x="50%" y="65%" font-family="'Syne', sans-serif" font-weight="800" font-size="42" fill="#E8531A" text-anchor="middle" letter-spacing="-2">RK</text>
+  <rect width="100" height="100" rx="20" fill="#080807" />
+  <rect width="90" height="90" x="5" y="5" rx="15" fill="none" stroke="#FF5C00" stroke-width="1.5" stroke-opacity="0.3" />
+  <text x="50%" y="65%" font-family="'Clash Display', 'Syne', 'Inter', sans-serif" font-weight="800" font-size="44" fill="#FF5C00" text-anchor="middle" letter-spacing="-2">RK</text>
 </svg>

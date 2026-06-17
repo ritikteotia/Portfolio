@@ -1,563 +1,485 @@
-'use client';
+import dynamic from 'next/dynamic';
+import {
+  IconBrandGithub,
+  IconBrandLinkedin,
+  IconBrandX,
+  IconBrandYoutube,
+  IconMail,
+  IconArrowUpRight,
+} from '@tabler/icons-react';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import emailjs from '@emailjs/browser';
 import Nav from '@/components/nav';
+import HeroContent from '@/components/hero-content';
+import Tilt from '@/components/tilt';
+import YouTubeBento, { YouTubeVideo } from '@/components/youtube-bento';
+import GithubBento from '@/components/github-bento';
+import BentoStats from '@/components/bento-stats';
+import ContactForm from '@/components/contact-form';
+import { xPosts } from '@/data/posts';
 
-// Project items data
+
+// Server-side YouTube Data API v3 fetch at build time (getStaticProps behavior in App Router)
+async function getLatestVideos(): Promise<YouTubeVideo[] | null> {
+  const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+  const channelId = process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_ID;
+
+  if (!apiKey || !channelId) return null;
+
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet,id&order=date&maxResults=2&type=video`,
+      { next: { revalidate: 86400 } } // Revalidate cache daily
+    );
+    if (!res.ok) throw new Error('YouTube API request failed');
+    const data = await res.json();
+    
+    if (!data.items) return null;
+
+    return data.items.map((item: any) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.high.url,
+      link: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      views: 'Latest Video',
+    }));
+  } catch (error) {
+    console.error('Error fetching YouTube videos:', error);
+    return null;
+  }
+}
+
+// Projects list data
 const projects = [
   {
     num: '01',
-    title: 'MOM — AI Marketing OS',
-    tag: '🏆 Hackathon Winner 2025',
-    tags: ['AWS Bedrock', 'Lambda', 'PostgreSQL', 'Next.js'],
-    desc: 'Multi-model LLM routing on Amazon Bedrock with serverless Lambda for intelligent task classification. Similarity-based recommendation engine for campaign-audience alignment.',
+    title: 'MOM: AI Marketing OS',
+    status: 'Live',
+    tags: ['AWS Bedrock', 'Lambda', 'PostgreSQL', 'Next.js', 'Python'],
+    desc: 'Multi-model LLM routing with intelligent campaign orchestration.',
     github: 'https://github.com/ritikteotia/MOM',
+    badge: '🏆 Hackathon Winner 2025',
+    accentColor: 'border-t-2 border-accent',
+    glowColor: 'rgba(255, 92, 0, 0.2)',
   },
   {
     num: '02',
-    title: 'BRAVISI — Gen AI SEO Platform',
+    title: 'BRAVISI: Gen AI SEO Platform',
+    status: 'Open Source',
     tags: ['SageMaker', 'Bedrock', 'NLP', 'Python'],
-    desc: 'Structured data-extraction pipeline on Amazon Bedrock that parses unstructured web content into an AI Visibility Score. Tracks brand presence across ChatGPT, Gemini, and Claude.',
+    desc: 'AI Visibility Score engine tracking brand presence across LLMs.',
     github: 'https://github.com/ritikteotia/BRAVISI',
+    accentColor: 'border-t-2 border-brand-purple',
+    glowColor: 'rgba(167, 139, 250, 0.2)',
   },
   {
     num: '03',
     title: 'Customer Segmentation System',
+    status: 'Open Source',
     tags: ['Scikit-learn', 'K-Means', 'Pandas', 'Streamlit'],
-    desc: 'End-to-end unsupervised ML pipeline clustering customers into 4 behavioural profiles. Validated with Elbow Method and Silhouette Scoring. Live Streamlit dashboard.',
+    desc: 'Unsupervised ML pipeline segmenting customers into 4 profiles.',
     github: 'https://github.com/ritikteotia/segcy',
+    accentColor: 'border-t-2 border-brand-amber',
+    glowColor: 'rgba(255, 193, 7, 0.2)',
   },
 ];
 
-// Skills marquee items
+// Skills Arrays
 const marqueeRow1 = [
   'Python',
   'TensorFlow',
   'PyTorch',
-  'HuggingFace',
+  'HuggingFace Transformers',
   'Scikit-learn',
-  'AWS SageMaker',
   'Amazon Bedrock',
+  'AWS SageMaker',
+  'AWS Lambda',
   'LLM Fine-Tuning',
   'RAG',
   'XGBoost',
   'NLP',
-  'Random Forests',
+  'Seq2Seq',
+  'Bayesian Inference',
 ];
 
 const marqueeRow2 = [
   'Next.js',
+  'TypeScript',
   'SQL',
   'Docker',
   'NumPy',
   'Pandas',
   'Git',
   'K-Means Clustering',
-  'Bayesian Inference',
+  'Feature Engineering',
   'REST APIs',
   'Streamlit',
-  'Lambda',
-  'Feature Engineering',
+  'Random Forests',
+  'PostgreSQL',
+  'Computer Vision',
 ];
 
-// Stagger Animation configurations
-const sectionReveal = {
-  hidden: { opacity: 0, y: 28 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.45,
-      ease: [0.25, 0.46, 0.45, 0.94] as const,
-    },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-export default function Home() {
-  const [hasScrolled, setHasScrolled] = useState(false);
-  const [dynamicQuestion, setDynamicQuestion] = useState('What would you like to work on together?');
-  const [destinationEmail, setDestinationEmail] = useState('ritikteotiaone4@gmail.com');
-
-  // Form input states
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-
-  useEffect(() => {
-    // Detect scroll to fade out down cue
-    const handleScroll = () => {
-      if (window.scrollY > 40) {
-        setHasScrolled(true);
-      } else {
-        setHasScrolled(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-
-    // Retrieve settings configured in /admin
-    const storedQuestion = localStorage.getItem('portfolio_question');
-    const storedEmail = localStorage.getItem('portfolio_email');
-    if (storedQuestion) setDynamicQuestion(storedQuestion);
-    if (storedEmail) setDestinationEmail(storedEmail);
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormStatus('sending');
-
-    // EmailJS keys are retrieved from environment variables.
-    // Configure these inside your .env.local file:
-    // NEXT_PUBLIC_EMAILJS_SERVICE_ID=your_service_id
-    // NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=your_template_id
-    // NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=your_public_key
-    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || '';
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || '';
-    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
-
-    // If API keys are not supplied in variables, mock sending email with local inbox fallback
-    if (!serviceId || !templateId || !publicKey) {
-      setTimeout(() => {
-        // Fallback: trigger standard mail client fallback if no API key is specified
-        const subject = encodeURIComponent(`Message from Portfolio - ${name}`);
-        const mailBody = encodeURIComponent(
-          `Sender: ${name} (${email})\nQuestion asked: ${dynamicQuestion}\nAnswer:\n${answer}`
-        );
-        window.location.href = `mailto:${destinationEmail}?subject=${subject}&body=${mailBody}`;
-        setFormStatus('success');
-      }, 800);
-      return;
-    }
-
-    emailjs
-      .send(
-        serviceId,
-        templateId,
-        {
-          from_name: name,
-          from_email: email,
-          question: dynamicQuestion,
-          message: answer,
-          to_email: destinationEmail,
-        },
-        publicKey
-      )
-      .then(
-        () => {
-          setFormStatus('success');
-          setName('');
-          setEmail('');
-          setAnswer('');
-        },
-        (error) => {
-          console.error('EmailJS Error:', error);
-          setFormStatus('error');
-        }
-      );
-  };
-
-  // Split name for stagger reveal
-  const titleWords = ['I build AI', 'systems that work.'];
+export default async function Home() {
+  const latestVideos = await getLatestVideos();
 
   return (
     <>
-      {/* Sticky pill layout nav header wrapper */}
+      {/* Sticky header navbar */}
       <Nav />
 
-      {/* Main page content wrapper */}
-      <main className="flex-1 w-full bg-[#FFFDF8] text-[#111111] overflow-x-hidden">
-        
-        {/* Section 1: HERO */}
-        <section
-          id="hero"
-          className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-start px-[5vw]"
-        >
-          <div className="max-w-5xl flex flex-col items-start text-left">
-            {/* Small tag */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="font-mono text-xs tracking-normal text-[#E8531A] mb-4"
-            >
-              &lt;builder /&gt;
-            </motion.div>
+      {/* Main page body */}
+      <main className="flex-1 w-full bg-bg text-text-1 overflow-x-hidden relative">
 
-            {/* H1 Main title stagger */}
-            <h1 className="text-[#111111] font-heading font-extrabold leading-[1.05] tracking-tight mb-6 text-[clamp(42px,7.5vw,88px)]">
-              {titleWords.map((line, lineIdx) => (
-                <span key={lineIdx} className="block overflow-hidden py-1">
-                  {line.split(' ').map((word, wordIdx) => (
-                    <motion.span
-                      key={wordIdx}
-                      initial={{ y: '100%', opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{
-                        delay: (lineIdx * 3 + wordIdx) * 0.07,
-                        duration: 0.65,
-                        ease: [0.25, 0.46, 0.45, 0.94] as const,
-                      }}
-                      className="inline-block mr-4 last:mr-0"
-                    >
-                      {word}
-                    </motion.span>
-                  ))}
-                </span>
-              ))}
-            </h1>
+        {/* SECTION 1: HERO */}
+        <section id="hero" className="w-full relative">
+          <HeroContent />
+        </section>
 
-            {/* Sub line */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="text-base md:text-lg text-[#6B6055] font-normal tracking-wide max-w-xl"
-            >
-              Second-year CS student. ML builder. Meerut.
-            </motion.p>
+        {/* SECTION 2: STATUS BAR */}
+        <section className="w-full bg-surface border-y border-border-warm py-6 px-[5vw] flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="font-mono text-[10px] text-text-2 uppercase tracking-[0.14em] font-semibold">
+              NOW
+            </span>
+            <span className="text-sm font-medium text-text-1">
+              Building MOM — AI Marketing OS on Amazon Bedrock.
+            </span>
           </div>
 
-          {/* Bottom border & arrow scroll indicator */}
-          <div className="absolute bottom-0 left-[5vw] right-[5vw] border-b border-[#E8DDD3] pb-6 flex items-center justify-between pointer-events-none">
-            <span className="text-[10px] font-mono text-[#6B6055] uppercase tracking-widest">
-              Scroll Down
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono text-[11px] text-brand-green bg-brand-green/10 border border-brand-green/20 px-3 py-1 rounded-full">
+              🟢 In process
             </span>
-            <motion.div
-              animate={{
-                y: [0, 6, 0],
-                opacity: hasScrolled ? 0 : 0.6,
-              }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="w-4 h-4 text-[#E8531A] transition-opacity duration-300"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <polyline points="19 12 12 19 5 12"></polyline>
-              </svg>
-            </motion.div>
+            <span className="font-mono text-[11px] text-accent bg-accent/10 border border-accent/20 px-3 py-1 rounded-full">
+              ⚡ Building in public
+            </span>
+            <span className="font-mono text-[11px] text-text-2 bg-surface-2 border border-border-warm px-3 py-1 rounded-full">
+              📍 Meerut, IN
+            </span>
           </div>
         </section>
 
-        {/* Section 2: PROJECTS */}
-        <motion.section
-          id="projects"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={sectionReveal}
-          className="py-24 px-[5vw]"
-        >
-          {/* Section labels */}
-          <div className="mb-10">
-            <span className="text-[11px] font-bold font-mono tracking-[0.12em] text-[#6B6055] uppercase">
+        {/* SECTION 3: WORK PROJECTS */}
+        <section id="projects" className="py-24 px-[5vw] max-w-6xl mx-auto relative z-10">
+          <div className="mb-12">
+            <span className="font-mono text-[11px] text-text-2 uppercase tracking-[0.14em] font-semibold">
               SELECTED WORK
             </span>
-            <h2 className="text-3xl md:text-[42px] font-heading font-bold text-[#111111] mt-2">
-              What I&apos;ve built.
+            <h2 className="font-heading text-4xl md:text-[52px] font-bold text-text-1 tracking-tight mt-2">
+              What I ship.
             </h2>
           </div>
 
-          {/* Stacked Row list projects */}
-          <motion.div variants={staggerContainer} className="flex flex-col border-t border-[#E8DDD3]">
+          {/* Project cards responsive grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {projects.map((project, idx) => (
-              <motion.div
-                variants={sectionReveal}
+              <Tilt
                 key={project.num}
-                className="card-row flex flex-col md:flex-row items-start justify-between py-10 gap-8"
+                glowColor={project.glowColor}
+                className={`bento-cell flex flex-col justify-between p-6 min-h-[360px] ${project.accentColor} relative group`}
               >
-                {/* Number label */}
-                <div className="text-[48px] font-heading font-bold text-[#E8DDD3] leading-none md:w-16">
-                  {project.num}
-                </div>
-
-                {/* Content body info */}
-                <div className="flex-1 max-w-2xl flex flex-col gap-3">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <h3 className="text-xl md:text-2xl font-bold font-heading text-[#111111]">
-                      {project.title}
-                    </h3>
-                    {project.tag && (
-                      <span className="text-[11px] font-bold text-[#E8531A] bg-[#FFF0E5] border border-[#FFDCCA] px-3 py-1 rounded-full">
-                        {project.tag}
-                      </span>
-                    )}
+                {/* 3D Depth layering items */}
+                <div>
+                  <div className="flex justify-between items-start mb-6">
+                    <span className="font-heading text-5xl font-bold text-text-3 select-none transform translate-z-[-5px]">
+                      {project.num}
+                    </span>
+                    <span className={`font-mono text-[11px] px-2.5 py-1 rounded-full border ${
+                      project.status === 'Live'
+                        ? 'text-brand-green bg-brand-green/10 border-brand-green/20'
+                        : 'text-brand-amber bg-brand-amber/10 border-brand-amber/20'
+                    }`}>
+                      {project.status}
+                    </span>
                   </div>
 
+                  <h3 className="font-heading text-2xl font-semibold text-text-1 mb-2 transform translate-z-[10px]">
+                    {project.title}
+                  </h3>
+                  
+                  <p className="text-text-2 text-sm leading-relaxed mb-6 font-light">
+                    {project.desc}
+                  </p>
+                </div>
+
+                <div>
                   {/* Pills stack */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 mb-6">
                     {project.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="font-mono text-[11px] bg-[#FFF7EE] border border-[#E8DDD3] text-[#E8531A] px-2.5 py-0.5 rounded-full"
+                        className="font-mono text-[10px] text-text-2 bg-surface-2 border border-border-warm px-2 py-0.5 rounded-md"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
 
-                  {/* Description */}
-                  <p className="text-[#6B6055] text-sm leading-relaxed font-normal mt-2">
-                    {project.desc}
-                  </p>
+                  <div className="flex items-center justify-between border-t border-border-warm pt-4">
+                    <a
+                      href={project.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-mono text-text-2 hover:text-accent group-hover:text-accent transition-colors"
+                    >
+                      GitHub Repository ↗
+                    </a>
+                    {project.badge && (
+                      <span className="text-[10px] font-bold text-brand-amber transform translate-z-[15px]">
+                        {project.badge}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              </Tilt>
+            ))}
+          </div>
+        </section>
 
-                {/* Right external arrow link */}
-                <div className="flex items-center">
+        {/* SECTION 4: DISTRIBUTION HUB */}
+        <section className="py-24 px-[5vw] bg-surface-2/20 border-y border-border-warm relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-12">
+              <span className="font-mono text-[11px] text-text-2 uppercase tracking-[0.14em] font-semibold">
+                DISTRIBUTION
+              </span>
+              <h2 className="font-heading text-4xl md:text-[52px] font-bold text-text-1 tracking-tight mt-2">
+                Where I publish.
+              </h2>
+            </div>
+
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              {/* CELL A: YouTube */}
+              <YouTubeBento videos={latestVideos} />
+
+              {/* CELL B: X / Twitter */}
+              <Tilt className="bento-cell p-6 flex flex-col justify-between min-h-[300px] border-t-2 border-[#F5F5F5]">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <IconBrandX className="w-5 h-5 text-text-1" />
+                    <span className="font-heading font-semibold text-text-1 text-sm tracking-wide">X (Twitter)</span>
+                  </div>
+
                   <a
-                    href={project.github}
+                    href="https://x.com/RitikTeotia_"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#6B6055] hover:text-[#E8531A] p-2 hover:bg-[#FFF0E5] rounded-full transition-colors duration-300"
-                    aria-label={`View GitHub for ${project.title}`}
+                    className="font-mono text-sm text-text-2 hover:text-accent transition-colors block mb-4"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="28"
-                      height="28"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="7" y1="17" x2="17" y2="7" />
-                      <polyline points="7 7 17 7 17 17" />
-                    </svg>
+                    @RitikTeotia_
                   </a>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
 
-        {/* Section 3: SKILLS (Infinite loop marquees) */}
-        <motion.section
-          id="skills"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={sectionReveal}
-          className="py-24 bg-[#FFF7EE] border-y border-[#E8DDD3]"
-        >
-          <div className="px-[5vw] mb-12">
-            <span className="text-[11px] font-bold font-mono tracking-[0.12em] text-[#6B6055] uppercase">
-              SKILLS &amp; CONCEPTS
+                  {/* Curated posts */}
+                  <div className="flex flex-col gap-4">
+                    {xPosts.map((post) => (
+                      <div key={post.id} className="border-l border-border-warm pl-3 py-1 flex flex-col gap-1">
+                        <p className="text-xs text-text-2 leading-relaxed font-light">
+                          {post.text}
+                        </p>
+                        <div className="flex gap-4 font-mono text-[9px] text-text-3 mt-1">
+                          <span>💬 {post.replies}</span>
+                          <span>🔁 {post.retweets}</span>
+                          <span>❤️ {post.likes}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <a
+                  href="https://x.com/RitikTeotia_"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-accent hover:opacity-80 transition-opacity mt-4 flex items-center gap-1"
+                >
+                  Follow on X ↗
+                </a>
+              </Tilt>
+
+              {/* CELL C: LinkedIn */}
+              <Tilt className="bento-cell p-6 flex flex-col justify-between min-h-[300px] border-t-2 border-[#0A66C2]">
+                <div>
+                  <div className="flex items-center gap-2 mb-6">
+                    <IconBrandLinkedin className="w-5 h-5 text-[#0A66C2]" />
+                    <span className="font-heading font-semibold text-text-1 text-sm tracking-wide">LinkedIn</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-surface-2/40 border border-border-warm rounded-xl p-4 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-accent-dim border border-accent/20 flex items-center justify-center font-heading font-bold text-accent text-sm select-none">
+                      RK
+                    </div>
+                    <div>
+                      <div className="text-xs font-heading font-bold text-text-1">Ritik Kumar</div>
+                      <div className="text-[10px] text-text-3 font-mono mt-0.5">AI Engineer · MIET Meerut</div>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href="https://linkedin.com/in/ritikteotia"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 bg-[#0A66C2]/15 border border-[#0A66C2]/30 hover:bg-[#0A66C2]/25 text-white font-mono text-xs font-semibold rounded-xl text-center transition-all flex items-center justify-center gap-1.5"
+                >
+                  Connect ↗
+                </a>
+              </Tilt>
+
+              {/* CELL D: GitHub client API details */}
+              <GithubBento />
+
+              {/* CELL E: Stats row */}
+              <BentoStats />
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 5: SKILLS MARQUEE */}
+        <section id="skills" className="py-24 overflow-hidden relative z-10">
+          <div className="px-[5vw] max-w-6xl mx-auto mb-12">
+            <span className="font-mono text-[11px] text-text-2 uppercase tracking-[0.14em] font-semibold">
+              TECH STACK
             </span>
-            <h2 className="text-3xl md:text-[42px] font-heading font-bold text-[#111111] mt-2">
+            <h2 className="font-heading text-4xl md:text-[52px] font-bold text-text-1 tracking-tight mt-2">
               Things I know.
             </h2>
           </div>
 
-          <div className="marquee-container">
-            {/* Row 1 marquee tape */}
-            <div className="marquee-track marquee-row-1">
-              {[...marqueeRow1, ...marqueeRow1].map((skill, index) => (
+          <div className="marquee-container-v3">
+            {/* Row 1 fast loop */}
+            <div className="marquee-track-v3 marquee-row-speed1">
+              {[...marqueeRow1, ...marqueeRow1].map((skill, i) => (
                 <div
-                  key={index}
-                  className="bg-[#FFF7EE] border border-[#E8DDD3] text-[#111111] hover:bg-[#FFF0E5] hover:text-[#E8531A] font-heading text-[13px] font-medium px-5 py-2.5 rounded-full whitespace-nowrap transition-colors cursor-default"
+                  key={i}
+                  className="bg-surface-2 border border-border-warm text-text-1 hover:border-accent hover:text-accent font-mono text-xs font-semibold px-4.5 py-2 rounded-full cursor-default transition-colors whitespace-nowrap"
                 >
                   {skill}
                 </div>
               ))}
             </div>
 
-            {/* Row 2 marquee tape */}
-            <div className="marquee-track marquee-row-2">
-              {[...marqueeRow2, ...marqueeRow2].map((concept, index) => (
+            {/* Row 2 slow loop */}
+            <div className="marquee-track-v3 marquee-row-speed2">
+              {[...marqueeRow2, ...marqueeRow2].map((concept, i) => (
                 <div
-                  key={index}
-                  className="bg-[#FFF7EE] border border-[#E8DDD3] text-[#111111] hover:bg-[#FFF0E5] hover:text-[#E8531A] font-heading text-[13px] font-medium px-5 py-2.5 rounded-full whitespace-nowrap transition-colors cursor-default"
+                  key={i}
+                  className="bg-surface-2 border border-border-warm text-text-1 hover:border-accent hover:text-accent font-mono text-xs font-semibold px-4.5 py-2 rounded-full cursor-default transition-colors whitespace-nowrap"
                 >
                   {concept}
                 </div>
               ))}
             </div>
           </div>
-        </motion.section>
+        </section>
 
-        {/* Section 4: CONNECT */}
-        <motion.section
-          id="connect"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={sectionReveal}
-          className="py-24 px-[5vw] max-w-6xl mx-auto"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+        {/* SECTION 6: CONNECT */}
+        <section id="connect" className="py-24 px-[5vw] max-w-6xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-16 items-start">
             
-            {/* LEFT: Social outreach */}
-            <div className="flex flex-col gap-8">
+            {/* LEFT: Connect links panel */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
               <div>
-                <span className="text-[11px] font-bold font-mono tracking-[0.12em] text-[#6B6055] uppercase">
-                  GET IN TOUCH
+                <span className="font-mono text-[11px] text-text-2 uppercase tracking-[0.14em] font-semibold">
+                  CONNECT
                 </span>
-                <h2 className="text-3xl md:text-[42px] font-heading font-bold text-[#111111] mt-2">
-                  Find me here
+                <h2 className="font-heading text-4xl md:text-[52px] font-bold text-text-1 tracking-tight mt-2">
+                  Let&apos;s talk.
                 </h2>
               </div>
+              
+              <p className="text-text-2 text-base font-light leading-relaxed">
+                Find me across the internet. Feel free to shoot a message for collaborations, AI integrations, or project brainstorming.
+              </p>
 
-              <div className="flex flex-col border-t border-[#E8DDD3]">
+              {/* Six glass cards row links */}
+              <div className="flex flex-col border-t border-border-warm mt-4">
                 {[
                   {
                     name: 'GitHub',
                     handle: 'github.com/ritikteotia',
                     href: 'https://github.com/ritikteotia',
-                    path: 'M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22',
+                    icon: <IconBrandGithub className="w-5 h-5 text-text-2 group-hover:text-accent transition-colors" />,
                   },
                   {
                     name: 'LinkedIn',
                     handle: 'linkedin.com/in/ritikteotia',
                     href: 'https://linkedin.com/in/ritikteotia',
-                    path: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z M2 9h4v12H2z M4 2a2 2 0 1 0 0 4 2 2 0 1 0 0-4z',
+                    icon: <IconBrandLinkedin className="w-5 h-5 text-text-2 group-hover:text-accent transition-colors" />,
+                  },
+                  {
+                    name: 'X',
+                    handle: 'x.com/RitikTeotia_',
+                    href: 'https://x.com/RitikTeotia_',
+                    icon: <IconBrandX className="w-5 h-5 text-text-2 group-hover:text-accent transition-colors" />,
+                  },
+                  {
+                    name: 'YouTube',
+                    handle: 'youtube.com/@ritikteotia',
+                    href: 'https://youtube.com/@ritikteotia',
+                    icon: <IconBrandYoutube className="w-5 h-5 text-text-2 group-hover:text-accent transition-colors" />,
                   },
                   {
                     name: 'Email',
                     handle: 'ritikteotiaone4@gmail.com',
                     href: 'mailto:ritikteotiaone4@gmail.com',
-                    path: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6',
+                    icon: <IconMail className="w-5 h-5 text-text-2 group-hover:text-accent transition-colors" />,
                   },
-                ].map((social) => (
+                ].map((link) => (
                   <a
-                    key={social.name}
-                    href={social.href}
-                    target={social.name !== 'Email' ? '_blank' : undefined}
-                    rel={social.name !== 'Email' ? 'noopener noreferrer' : undefined}
-                    className="flex items-center justify-between py-6 border-b border-[#E8DDD3] hover:bg-[#FFF0E5] hover:px-4 transition-all duration-300 group"
+                    key={link.name}
+                    href={link.href}
+                    target={link.name !== 'Email' ? '_blank' : undefined}
+                    rel={link.name !== 'Email' ? 'noopener noreferrer' : undefined}
+                    className="flex items-center justify-between py-5 border-b border-border-warm hover:bg-accent-dim hover:px-4 transition-all duration-300 group rounded-lg"
                   >
-                    <div className="flex items-center gap-4">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#6B6055] group-hover:text-[#E8531A] transition-colors"
-                      >
-                        {social.name === 'Email' ? (
-                          <>
-                            <rect x="2" y="4" width="20" height="16" rx="2" />
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                          </>
-                        ) : (
-                          <path d={social.path} />
-                        )}
-                      </svg>
-                      <span className="font-heading font-bold text-[#111111]">
-                        {social.name}
+                    <div className="flex items-center gap-3">
+                      {link.icon}
+                      <span className="font-sans font-semibold text-text-1 text-sm tracking-wide">
+                        {link.name}
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-2 text-xs font-mono text-[#6B6055] group-hover:text-[#E8531A]">
-                      <span className="hidden sm:inline">{social.handle}</span>
-                      <span>↗</span>
+                    
+                    <div className="flex items-center gap-1 text-xs font-mono text-text-3 group-hover:text-accent">
+                      <span className="hidden sm:inline">{link.handle}</span>
+                      <IconArrowUpRight className="w-3.5 h-3.5" />
                     </div>
                   </a>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT: Message Form */}
-            <div className="bg-[#FFF7EE] border border-[#E8DDD3] p-8 rounded-2xl flex flex-col gap-6">
-              <label className="font-heading font-semibold text-lg md:text-xl text-[#111111] leading-tight">
-                {dynamicQuestion}
-              </label>
-
-              {formStatus === 'success' ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-4 rounded-xl font-medium"
-                >
-                  Message sent! I&apos;ll reply soon.
-                </motion.div>
-              ) : (
-                <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="form-name" className="text-[10px] font-bold font-mono text-[#6B6055] uppercase tracking-wider">
-                      Your Name
-                    </label>
-                    <input
-                      id="form-name"
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="px-4 py-3 bg-[#FFFDF8] border border-[#E8DDD3] rounded-xl text-sm focus:outline-none focus:border-[#E8531A] transition-colors"
-                      placeholder="Name"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="form-email" className="text-[10px] font-bold font-mono text-[#6B6055] uppercase tracking-wider">
-                      Your Email
-                    </label>
-                    <input
-                      id="form-email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="px-4 py-3 bg-[#FFFDF8] border border-[#E8DDD3] rounded-xl text-sm focus:outline-none focus:border-[#E8531A] transition-colors"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="form-answer" className="text-[10px] font-bold font-mono text-[#6B6055] uppercase tracking-wider">
-                      Your Answer
-                    </label>
-                    <textarea
-                      id="form-answer"
-                      rows={4}
-                      required
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      className="px-4 py-3 bg-[#FFFDF8] border border-[#E8DDD3] rounded-xl text-sm focus:outline-none focus:border-[#E8531A] transition-colors resize-none"
-                      placeholder="Type your message here..."
-                    />
-                  </div>
-
-                  {formStatus === 'error' && (
-                    <div className="text-xs text-red-600 font-medium">
-                      Something went wrong. Try again.
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={formStatus === 'sending'}
-                    className="py-3.5 bg-[#E8531A] hover:bg-[#F5A623] text-white font-heading text-sm font-semibold rounded-xl tracking-wide flex items-center justify-center gap-2 cursor-pointer transition-colors duration-300"
-                  >
-                    {formStatus === 'sending' ? 'Sending...' : 'Send Message →'}
-                  </button>
-                </form>
-              )}
+            {/* RIGHT: Dynamic contact form */}
+            <div className="lg:col-span-5 w-full">
+              <ContactForm />
             </div>
           </div>
-        </motion.section>
+        </section>
 
         {/* Footer */}
-        <footer className="border-t border-[#E8DDD3] py-8 px-[5vw] flex items-center justify-between text-xs font-mono text-[#6B6055]">
-          <div>&copy; 2026 Ritik Kumar</div>
-          <div>Built with Next.js</div>
+        <footer className="border-t border-border-warm py-8 px-[5vw] flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10 bg-bg">
+          <div className="font-mono text-xs text-text-3">Ritik Kumar</div>
+          
+          {/* Five footer social links */}
+          <div className="flex gap-4">
+            {[
+              { href: 'https://github.com/ritikteotia', icon: <IconBrandGithub className="w-4.5 h-4.5" /> },
+              { href: 'https://linkedin.com/in/ritikteotia', icon: <IconBrandLinkedin className="w-4.5 h-4.5" /> },
+              { href: 'https://x.com/RitikTeotia_', icon: <IconBrandX className="w-4.5 h-4.5" /> },
+              { href: 'https://youtube.com/@ritikteotia', icon: <IconBrandYoutube className="w-4.5 h-4.5" /> },
+              { href: 'mailto:ritikteotiaone4@gmail.com', icon: <IconMail className="w-4.5 h-4.5" /> },
+            ].map((soc, idx) => (
+              <a
+                key={idx}
+                href={soc.href}
+                target={soc.href.startsWith('mailto') ? undefined : '_blank'}
+                rel="noopener noreferrer"
+                className="text-text-3 hover:text-accent transition-colors duration-200"
+              >
+                {soc.icon}
+              </a>
+            ))}
+          </div>
         </footer>
       </main>
     </>

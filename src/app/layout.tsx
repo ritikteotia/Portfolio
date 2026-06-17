@@ -40,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-warm-bg text-warm-text font-sans antialiased min-h-screen">
+      <body className="bg-bg text-text-1 font-sans antialiased min-h-screen">
         {/* Custom cursor dot */}
         <CustomCursor />
 

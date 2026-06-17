@@ -20,24 +20,23 @@ export default function Nav() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full h-16 bg-[#FFFDF8] border-b border-[#E8DDD3] flex items-center justify-between px-[5vw]">
-      {/* LEFT: Name */}
+    <header className="sticky top-0 z-50 w-full h-16 bg-[#080807]/85 backdrop-blur-md border-b border-white/7 flex items-center justify-between px-[5vw]">
+      {/* LEFT: Logo Monogram */}
       <a
         href="#"
         onClick={scrollToTop}
-        className="font-heading text-lg font-bold text-[#111111] hover:text-[#E8531A] transition-colors"
+        className="font-mono text-base font-bold text-accent tracking-[0.08em] hover:opacity-80 transition-opacity"
       >
         Ritik Kumar
       </a>
 
       {/* RIGHT: Connect Button */}
-      <a
-        href="#connect"
+      <button
         onClick={scrollToConnect}
-        className="bg-[#E8531A] hover:bg-[#F5A623] text-white font-heading text-sm font-semibold rounded-full px-5 py-2 transition-colors duration-300"
+        className="border border-accent text-accent bg-transparent hover:bg-accent-dim font-sans text-sm font-semibold rounded-full px-5 py-2 transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
       >
-        Connect ↗
-      </a>
+        Connect <span>↗</span>
+      </button>
     </header>
   );
 }
