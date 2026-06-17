@@ -34,7 +34,7 @@ export default function CustomCursor() {
 
     let animationFrameId = 0;
     const animateCursor = () => {
-      const ease = 0.15; // smooth delay multiplier
+      const ease = 0.2;
       cursorX += (mouseX - cursorX) * ease;
       cursorY += (mouseY - cursorY) * ease;
 
@@ -44,38 +44,10 @@ export default function CustomCursor() {
 
     animationFrameId = requestAnimationFrame(animateCursor);
 
-    // Make cursor disappear on clickable components
-    const handleLinkHover = () => {
-      cursor.style.width = '24px';
-      cursor.style.height = '24px';
-      cursor.style.backgroundColor = 'rgba(34, 211, 238, 0.4)';
-    };
-
-    const handleLinkLeave = () => {
-      cursor.style.width = '16px';
-      cursor.style.height = '16px';
-      cursor.style.backgroundColor = '';
-    };
-
-    const addHoverListeners = () => {
-      const clickables = document.querySelectorAll('a, button, [role="button"], input, textarea');
-      clickables.forEach((el) => {
-        el.addEventListener('mouseenter', handleLinkHover);
-        el.addEventListener('mouseleave', handleLinkLeave);
-      });
-    };
-
-    addHoverListeners();
-
-    // Set up observer for dynamically added buttons
-    const observer = new MutationObserver(addHoverListeners);
-    observer.observe(document.body, { childList: true, subtree: true });
-
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
-      observer.disconnect();
     };
   }, []);
 
